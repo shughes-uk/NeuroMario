@@ -6,11 +6,19 @@ ButtonNames = {
        "Left",
        "Right",
 }
-
-BoxRadius = 6
-InputSize = (BoxRadius*2+1)*(BoxRadius*2+1)
-Inputs = InputSize+1
-Outputs = #ButtonNames
+COMMAND_ENCODINGS = {
+                    [0x01] = "frameadvance",
+                    [0x02] = "speedmode_maximum",
+                    [0x03] = "speedmode_normal",
+                    [0x04] = "message",
+                    [0x05] = "framecount",
+                    [0x06] = "emulating",
+                    [0x07] = "print",
+                    [0x08] = "readbyte",
+                    [0x09] = "readbytesigned",
+                    [0x10] = "readbytes",
+                    [0x11] = "joypadset",
+                    [0x12] = "loadstate"}
 
 function split(source, delimiters)
         local elements = {}
@@ -18,38 +26,59 @@ function split(source, delimiters)
         string.gsub(source, pattern, function(value) elements[#elements + 1] =     value;  end);
         return elements
   end
-emu.speedmode("maximum")
 
 local socket = require('socket')
---local socket = require("socket")
 local server = assert(socket.bind("*",9000))
 local ip, port = server:getsockname()
 emu.print("Hello world!  " .. port);
-
+initial_state = savestate.create(1)
 local client = server:accept()
+emu.print("Hello world!  " .. port);
 
 
 while (true) do
-    client:settimeout(10)
+    client:settimeout(2)
     local line, err = client:receive()
-    local requested_memory_str = split(line,',')
-    local requested_memory = {}
-    for k,address_range in pairs(requested_memory_str) do
-      address_range = split(address_range,'_')
-      --emu.print(address_range[1],address_range[2])
-      --emu.print(memory.readbyterange(address_range[1],address_range[2]))
-      local memstr = memory.readbyterange(address_range[1],address_range[2])
-      table.insert(requested_memory,memstr)
+    if err then
+        break
     end
-    -- emu.print(requested_memory)
-    for k,memstr in pairs(requested_memory) do
-      -- emu.print("sending "..memstr)
-      client:send(memstr)
-      client:send('\r\r')
+    local command = COMMAND_ENCODINGS[line:sub(1,1):byte()]
+    local args = split(line:sub(2),'_')
+    -- emu.print(line)
+    -- emu.print(args)
+
+    if command == "emulating" then
+        if emu.emulating() then
+            client:send('1')
+        else
+            client:send('0')
+        end
+    elseif command == "frameadvance" then
+        emu.frameadvance()
+    elseif command == "speedmode_maximum" then
+        emu.speedmode("maximum")
+    elseif command == "speedmode_normal" then
+        emu.speedmode("normal")
+    elseif command == "message" then
+        emu.message(args[1])
+    elseif command == "framecount" then
+        client:send(tostring(emu.framecount()))
+    elseif command == "print" then
+        emu.print(args[1])
+    elseif command == "readbyte" then
+        local byte = memory.readbyte(args[1])
+        client:send(byte)
+    elseif command == "readbytesigned" then
+        local byte = memory.readbytesigned(args[1])
+        client:send(byte)
+    elseif command == "readbytes" then
+        for i=1, #args, 2 do
+            local bytes = memory.readbyterange(args[i],args[i+1])
+            client:send(bytes)
+        end
+    elseif command == "loadstate" then
+        savestate.load(initial_state)
     end
-    client:send('\n\r\n\r')
-    emu.frameadvance();
-    emu.frameadvance();
-    emu.frameadvance();
-    emu.frameadvance();
+
+    client:send('\r\n')
 end;
