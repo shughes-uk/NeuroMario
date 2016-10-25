@@ -2,7 +2,7 @@ import os
 from mariobot import MarioInterface
 from neat import nn, population, statistics
 from threading import Thread
-emulator_clients = 2
+emulator_clients = 10
 clients = []
 for x in range(0, emulator_clients):
     clients.append(MarioInterface(operating_port=9001+x))
@@ -43,7 +43,7 @@ def test_genomes(genomes, mario_interface):
             #     pass
             # old_outputs = outputs
         g.fitness = max_x
-        print("Tested : {0} Fitness {1}".format(g.ID,g.fitness))
+        # print("Tested : {0} Fitness {1}".format(g.ID,g.fitness))
         mario_interface.reset()
 
 

@@ -3,11 +3,12 @@ import logging
 from emulator_bridge import emulator_bridge
 from mariolocs import locations
 import socket
-
+import psutil
 logging.basicConfig(
     level=logging.INFO,
     format='%(name)s: %(message)s', )
 
+interface_count = 0
 
 class MarioInterface(object):
     FCEUX_BIN = "../FCEUX/fceux.exe"
@@ -16,10 +17,15 @@ class MarioInterface(object):
     SAVE_STATE_PATH = "level_1_state.fcs"
 
     def __init__(self, frame_interval=5, operating_port=9001,):
+        global interface_count
         self.proc = subprocess.Popen([
             self.FCEUX_BIN, "-lua", self.LUA_RELAY_PATH, '-loadstate',
             self.SAVE_STATE_PATH, self.ROM_PATH
         ])
+        proc = psutil.Process(self.proc.pid)
+        proc.cpu_affinity([int(round(interface_count/2))])
+        proc.nice(psutil.HIGH_PRIORITY_CLASS)
+        interface_count += 1
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(('127.0.0.1', 9000))
         s.listen(1)

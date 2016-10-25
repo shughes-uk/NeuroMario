@@ -43,7 +43,7 @@ savestate.save(initial_state)
 local client = server:accept()
 emu.print("Client connected")
 
-client:settimeout(5)
+client:settimeout(20)
 joypad_initial = joypad.get(1)
 joypad_old = joypad.get(1)
 joypad_current = joypad_initial

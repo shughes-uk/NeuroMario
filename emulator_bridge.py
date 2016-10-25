@@ -25,6 +25,7 @@ class luasocket_client(object):
         self.logger = logging.getLogger('luasocket_client')
         super().__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.socket.settimeout(15)
         self.logger.debug('connecting to %s', (host, port))
         self.socket.connect((host, port))
         #self.socket.sendall(TERMINATOR)
@@ -74,7 +75,6 @@ class emulator_bridge(object):
         self.send_command('frameadvance')
 
     def load_state(self, state):
-        print("send load")
         self.send_command('loadstate', state)
 
     def message(self, message):
