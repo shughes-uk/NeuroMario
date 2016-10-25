@@ -2,7 +2,7 @@ import os
 from mariobot import MarioInterface
 from neat import nn, population, statistics
 
-mario_interface = MarioInterface()
+mario_interface = MarioInterface(frame_interval=5)
 
 def eval_fitness(genomes):
     for g in genomes:
@@ -10,10 +10,11 @@ def eval_fitness(genomes):
         net = nn.create_feed_forward_phenotype(g)
         max_x = 0
         updates_since_last_max = 0
-        while not mario_interface.mario_dead and updates_since_last_max < 15:
+        old_outputs = []
+        while not mario_interface.mario_dead and updates_since_last_max < 10:
             inputs = list(mario_interface.tiles)
             inputs.append(mario_interface.mariox)
-            outputs = net.serial_activate(inputs)
+            outputs = [ int(round(x)) for x in net.serial_activate(inputs)]
             if mario_interface.mariox > max_x:
                 max_x = mario_interface.mariox
                 updates_since_last_max = 0
@@ -21,6 +22,11 @@ def eval_fitness(genomes):
                 updates_since_last_max += 1
             mario_interface.joypad = outputs
             mario_interface.update()
+            if outputs != old_outputs:
+                print("outputs changed to")
+                print(outputs)
+            old_outputs = outputs
+
         g.fitness = max_x
         print("Fitness {0}".format(g.fitness))
         mario_interface.reset()

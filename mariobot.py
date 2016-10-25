@@ -20,18 +20,20 @@ class MarioInterface(object):
             self.SAVE_STATE_PATH, self.ROM_PATH
         ])
         self.eclient = emulator_bridge('127.0.0.1', 9000)
-        self.frame_interval = 2
+        self.frame_interval = frame_interval
         self.joypad = [0, 0, 0, 0, 0, 0, 0]
-        self.tiles = self.eclient.read_bytes(locations['tiles'][0],
-                                             locations['tiles'][1])
+        self.get_tiles()
         self.mariox = self.eclient.read_bytes(0x6D, 1)[0] * 0x100 + self.eclient.read_bytes(0x86, 1)[0]
         self.mario_dead = False
+
+    def get_tiles(self):
+        tilebytes =  self.eclient.read_bytes(*locations['tiles'])
+        self.tiles = [1 if x > 0 else 0 for x in tilebytes]
 
     def reset(self):
         self.eclient.load_state(1)
         self.joypad = [0, 0, 0, 0, 0, 0, 0]
-        self.tiles = self.eclient.read_bytes(locations['tiles'][0],
-                                             locations['tiles'][1])
+        self.get_tiles()
         self.mariox = self.eclient.read_bytes(0x6D, 1)[0] * 0x100 + self.eclient.read_bytes(0x86, 1)[0]
         self.mario_dead = False
 
@@ -42,7 +44,7 @@ class MarioInterface(object):
         self.eclient.joypad_set(self.joypad)
         for x in range(self.frame_interval):
             self.eclient.frame_advance()
-        self.eclient.read_bytes(locations['tiles'][0], locations['tiles'][1])
+        self.get_tiles()
         self.mariox = self.eclient.read_bytes(0x6D, 1)[0] * 0x100 + self.eclient.read_bytes(0x86, 1)[0]
         self.mario_dead = self.eclient.read_bytes(*locations['player_state'])[0] == 0x0B
 

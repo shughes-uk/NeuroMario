@@ -1,11 +1,3 @@
-ButtonNames = {
-       "A",
-       "B",
-       "Up",
-       "Down",
-       "Left",
-       "Right",
-}
 COMMAND_ENCODINGS = {
                     [0x01] = "frameadvance",
                     [0x02] = "speedmode_maximum",
@@ -45,7 +37,9 @@ local client = server:accept()
 emu.print("Client connected")
 
 client:settimeout(5)
-
+joypad_initial = joypad.get(1)
+joypad_old = joypad.get(1)
+joypad_current = joypad_initial
 while (true) do
     local line, err = client:receive()
     if err then
@@ -64,6 +58,14 @@ while (true) do
             client:send('0')
         end
     elseif command == "frameadvance" then
+        joypad.set(1,joypad_current)
+        -- for k,v in pairs(joypad_old) do
+        --     if v ~= joypad.get(1)[k] then
+        --         emu.print(k.." changed to "..tostring(joypad.get(1)[k]))
+        --     end
+        -- end
+        -- joypad_old = joypad.get(1)
+        --emu.print(joypad.getdown(1))
         emu.frameadvance()
     elseif command == "speedmode_maximum" then
         emu.speedmode("maximum")
@@ -88,21 +90,24 @@ while (true) do
         end
     elseif command == "loadstate" then
         emu.print("LOADING")
+        joypad_current = joypad_initial
         savestate.load(initial_state)
     elseif command == "joypadset" then
+        -- emu.print(args)
         for k,v in pairs(args) do
             args[k] = int_to_bool(v)
         end
-        joypad_table = {
+        -- emu.print("converted args")
+        -- emu.print(args)
+        joypad_current = {
             up = args[1],
             down = args[2],
             left = args[3],
             right = args[4],
             A = args[5],
             B = args[6],
-            start = args[7],
-            select = args[8]}
-        joypad.set(1,joypad_table)
+            start = false,
+            select = false}
     end
     client:send('\r\n')
 end
