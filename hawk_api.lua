@@ -25,21 +25,31 @@ function split(source, delimiters)
         local pattern = '([^'..delimiters..']+)'
         string.gsub(source, pattern, function(value) elements[#elements + 1] =     value;  end);
         return elements
-  end
+end
+function int_to_bool(val)
+    if tonumber(val) == 0 then
+        return false
+    else
+        return true
+    end
+end
+
 
 local socket = require('socket')
 local server = assert(socket.bind("*",9000))
 local ip, port = server:getsockname()
 emu.print("Hello world!  " .. port);
-initial_state = savestate.create(1)
+initial_state = savestate.object(1)
+savestate.save(initial_state)
 local client = server:accept()
-emu.print("Hello world!  " .. port);
+emu.print("Client connected")
 
+client:settimeout(5)
 
 while (true) do
-    client:settimeout(2)
     local line, err = client:receive()
     if err then
+        emu.print(err)
         break
     end
     local command = COMMAND_ENCODINGS[line:sub(1,1):byte()]
@@ -77,8 +87,22 @@ while (true) do
             client:send(bytes)
         end
     elseif command == "loadstate" then
+        emu.print("LOADING")
         savestate.load(initial_state)
+    elseif command == "joypadset" then
+        for k,v in pairs(args) do
+            args[k] = int_to_bool(v)
+        end
+        joypad_table = {
+            up = args[1],
+            down = args[2],
+            left = args[3],
+            right = args[4],
+            A = args[5],
+            B = args[6],
+            start = args[7],
+            select = args[8]}
+        joypad.set(1,joypad_table)
     end
-
     client:send('\r\n')
-end;
+end
