@@ -1,9 +1,5 @@
-import asynchat
-import asyncore
 import logging
 import socket
-from queue import Queue
-import threading
 import struct
 TERMINATOR = '\r\n'.encode()
 COMMAND_ENCODINGS = {
@@ -26,7 +22,6 @@ class luasocket_client(object):
     """
 
     def __init__(self, host, port):
-        self.lock = threading.Lock()
         self.logger = logging.getLogger('luasocket_client')
         super().__init__()
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -57,7 +52,6 @@ class luasocket_client(object):
 
 class emulator_bridge(object):
     def __init__(self, host, port):
-        self.send_lock = threading.Lock()
         self.logger = logging.getLogger('emulator_bridge')
         self.luasocket_client = luasocket_client(host, port)
         self.send_command("speedmode_maximum")

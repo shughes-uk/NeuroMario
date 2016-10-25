@@ -2,6 +2,7 @@ import subprocess
 import logging
 from emulator_bridge import emulator_bridge
 from mariolocs import locations
+import socket
 
 logging.basicConfig(
     level=logging.INFO,
@@ -14,12 +15,18 @@ class MarioInterface(object):
     ROM_PATH = "Super Mario Bros. (JU) (PRG0) [!].nes"
     SAVE_STATE_PATH = "level_1_state.fcs"
 
-    def __init__(self, frame_interval=5):
+    def __init__(self, frame_interval=5, operating_port=9001,):
         self.proc = subprocess.Popen([
             self.FCEUX_BIN, "-lua", self.LUA_RELAY_PATH, '-loadstate',
             self.SAVE_STATE_PATH, self.ROM_PATH
         ])
-        self.eclient = emulator_bridge('127.0.0.1', 9000)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.bind(('127.0.0.1', 9000))
+        s.listen(1)
+        conn, addr = s.accept()
+        conn.sendall(str(operating_port).encode() + b"\r\n")
+        conn.close()
+        self.eclient = emulator_bridge('127.0.0.1', operating_port)
         self.frame_interval = frame_interval
         self.joypad = [0, 0, 0, 0, 0, 0, 0]
         self.get_tiles()

@@ -26,9 +26,16 @@ function int_to_bool(val)
     end
 end
 
-
 local socket = require('socket')
-local server = assert(socket.bind("*",9000))
+local callback_client = assert(socket.connect("127.0.0.1",9000))
+local port, err = callback_client:receive()
+if err then
+    emu.print(err)
+end
+callback_client:close()
+emu.print(port)
+
+local server = assert(socket.bind("*",tonumber(port)))
 local ip, port = server:getsockname()
 emu.print("Hello world!  " .. port);
 initial_state = savestate.object(1)
@@ -99,6 +106,9 @@ while (true) do
         end
         -- emu.print("converted args")
         -- emu.print(args)
+        if args[3] and args[4] then
+            args[3] = false
+        end
         joypad_current = {
             up = args[1],
             down = args[2],
